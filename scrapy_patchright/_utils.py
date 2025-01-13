@@ -5,7 +5,7 @@ import threading
 from typing import Awaitable, Dict, Iterator, Optional, Tuple, Union
 
 import scrapy
-from patchright.async_api import Error, Page, Request, Response
+from playwright.async_api import Error, Page, Request, Response
 from scrapy.http.headers import Headers
 from scrapy.settings import Settings
 from scrapy.utils.python import to_unicode
@@ -13,7 +13,7 @@ from twisted.internet.defer import Deferred
 from w3lib.encoding import html_body_declared_encoding, http_content_type_encoding
 
 
-logger = logging.getLogger("scrapy-patchright")
+logger = logging.getLogger("scrapy-playwright")
 
 
 async def _maybe_await(obj):
@@ -79,7 +79,7 @@ async def _get_page_content(
                     "context_name": context_name,
                     "scrapy_request_url": scrapy_request_url,
                     "scrapy_request_method": scrapy_request_method,
-                    "patchright_page_url": page.url,
+                    "playwright_page_url": page.url,
                 },
             )
             return await page.content()

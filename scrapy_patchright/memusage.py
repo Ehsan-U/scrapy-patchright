@@ -5,13 +5,13 @@ from typing import List
 from scrapy.exceptions import NotConfigured
 from scrapy.extensions.memusage import MemoryUsage
 
-from scrapy_patchright.handler import ScrapyPatchrightDownloadHandler, logger
+from scrapy_playwright.handler import ScrapyPlaywrightDownloadHandler, logger
 
 
 _MIB_FACTOR = 1024**2
 
 
-class ScrapyPatchrightMemoryUsageExtension(MemoryUsage):
+class ScrapyPlaywrightMemoryUsageExtension(MemoryUsage):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         try:
@@ -24,7 +24,7 @@ class ScrapyPatchrightMemoryUsageExtension(MemoryUsage):
             return [
                 handler.playwright_context_manager._connection._transport._proc.pid
                 for handler in self.crawler.engine.downloader.handlers._handlers.values()
-                if isinstance(handler, ScrapyPatchrightDownloadHandler)
+                if isinstance(handler, ScrapyPlaywrightDownloadHandler)
                 and handler.playwright_context_manager
             ]
         except Exception:
@@ -46,7 +46,7 @@ class ScrapyPatchrightMemoryUsageExtension(MemoryUsage):
             with suppress(Exception):  # might fail if the process exited in the meantime
                 total_process_size += proc.memory_info().rss
         logger.debug(
-            "Total Patchright process memory: %i Bytes (%i MiB)",
+            "Total Playwright process memory: %i Bytes (%i MiB)",
             total_process_size,
             total_process_size / _MIB_FACTOR,
         )
