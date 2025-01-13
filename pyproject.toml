@@ -1,6 +1,6 @@
 [project]
 name = "scrapy-patchright"
-version = "0.0.46"
+version = "0.0.42"
 description = "Patchright Integration For Scrapy"
 authors = [
     {name = "Ehsan U.",email = "lancerf562@gmail.com"}
