@@ -13,7 +13,7 @@ from twisted.internet.defer import Deferred
 from w3lib.encoding import html_body_declared_encoding, http_content_type_encoding
 
 
-logger = logging.getLogger("scrapy-playwright")
+logger = logging.getLogger("scrapy-patchright")
 
 
 async def _maybe_await(obj):
