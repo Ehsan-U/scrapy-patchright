@@ -5,7 +5,7 @@ import threading
 from typing import Awaitable, Dict, Iterator, Optional, Tuple, Union
 
 import scrapy
-from playwright.async_api import Error, Page, Request, Response
+from patchright.async_api import Error, Page, Request, Response
 from scrapy.http.headers import Headers
 from scrapy.settings import Settings
 from scrapy.utils.python import to_unicode
@@ -79,7 +79,7 @@ async def _get_page_content(
                     "context_name": context_name,
                     "scrapy_request_url": scrapy_request_url,
                     "scrapy_request_method": scrapy_request_method,
-                    "playwright_page_url": page.url,
+                    "patchright_page_url": page.url,
                 },
             )
             return await page.content()

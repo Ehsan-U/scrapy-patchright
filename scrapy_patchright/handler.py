@@ -49,10 +49,10 @@ from scrapy_patchright._utils import (
 )
 
 
-__all__ = ["ScrapyPlaywrightDownloadHandler"]
+__all__ = ["ScrapyPatchrightDownloadHandler"]
 
 
-PlaywrightHandler = TypeVar("PlaywrightHandler", bound="ScrapyPlaywrightDownloadHandler")
+PatchrightHandler = TypeVar("PatchrightHandler", bound="ScrapyPatchrightDownloadHandler")
 
 
 logger = logging.getLogger("scrapy-patchright")
@@ -101,39 +101,39 @@ class Config:
 
     @classmethod
     def from_settings(cls, settings: Settings) -> "Config":
-        if settings.get("PLAYWRIGHT_CDP_URL") and settings.get("PLAYWRIGHT_CONNECT_URL"):
-            msg = "Setting both PLAYWRIGHT_CDP_URL and PLAYWRIGHT_CONNECT_URL is not supported"
+        if settings.get("PATCHRIGHT_CDP_URL") and settings.get("PATCHRIGHT_CONNECT_URL"):
+            msg = "Setting both PATCHRIGHT_CDP_URL and PATCHRIGHT_CONNECT_URL is not supported"
             logger.error(msg)
             raise NotSupported(msg)
         cfg = cls(
-            cdp_url=settings.get("PLAYWRIGHT_CDP_URL"),
-            cdp_kwargs=settings.getdict("PLAYWRIGHT_CDP_KWARGS") or {},
-            connect_url=settings.get("PLAYWRIGHT_CONNECT_URL"),
-            connect_kwargs=settings.getdict("PLAYWRIGHT_CONNECT_KWARGS") or {},
-            browser_type_name=settings.get("PLAYWRIGHT_BROWSER_TYPE") or DEFAULT_BROWSER_TYPE,
-            launch_options=settings.getdict("PLAYWRIGHT_LAUNCH_OPTIONS") or {},
-            max_pages_per_context=settings.getint("PLAYWRIGHT_MAX_PAGES_PER_CONTEXT"),
-            max_contexts=settings.getint("PLAYWRIGHT_MAX_CONTEXTS") or None,
-            startup_context_kwargs=settings.getdict("PLAYWRIGHT_CONTEXTS"),
+            cdp_url=settings.get("PATCHRIGHT_CDP_URL"),
+            cdp_kwargs=settings.getdict("PATCHRIGHT_CDP_KWARGS") or {},
+            connect_url=settings.get("PATCHRIGHT_CONNECT_URL"),
+            connect_kwargs=settings.getdict("PATCHRIGHT_CONNECT_KWARGS") or {},
+            browser_type_name=settings.get("PATCHRIGHT_BROWSER_TYPE") or DEFAULT_BROWSER_TYPE,
+            launch_options=settings.getdict("PATCHRIGHT_LAUNCH_OPTIONS") or {},
+            max_pages_per_context=settings.getint("PATCHRIGHT_MAX_PAGES_PER_CONTEXT"),
+            max_contexts=settings.getint("PATCHRIGHT_MAX_CONTEXTS") or None,
+            startup_context_kwargs=settings.getdict("PATCHRIGHT_CONTEXTS"),
             navigation_timeout=_get_float_setting(
-                settings, "PLAYWRIGHT_DEFAULT_NAVIGATION_TIMEOUT"
+                settings, "PATCHRIGHT_DEFAULT_NAVIGATION_TIMEOUT"
             ),
             restart_disconnected_browser=settings.getbool(
-                "PLAYWRIGHT_RESTART_DISCONNECTED_BROWSER", default=True
+                "PATCHRIGHT_RESTART_DISCONNECTED_BROWSER", default=True
             ),
             use_threaded_loop=platform.system() == "Windows"
-            or settings.getbool("_PLAYWRIGHT_THREADED_LOOP", False),
+            or settings.getbool("_PATCHRIGHT_THREADED_LOOP", False),
         )
         cfg.cdp_kwargs.pop("endpoint_url", None)
         cfg.connect_kwargs.pop("ws_endpoint", None)
         if not cfg.max_pages_per_context:
             cfg.max_pages_per_context = settings.getint("CONCURRENT_REQUESTS")
         if (cfg.cdp_url or cfg.connect_url) and cfg.launch_options:
-            logger.warning("Connecting to remote browser, ignoring PLAYWRIGHT_LAUNCH_OPTIONS")
+            logger.warning("Connecting to remote browser, ignoring PATCHRIGHT_LAUNCH_OPTIONS")
         return cfg
 
 
-class ScrapyPlaywrightDownloadHandler(HTTPDownloadHandler):
+class ScrapyPatchrightDownloadHandler(HTTPDownloadHandler):
     playwright_context_manager: Optional[PlaywrightContextManager] = None
     playwright: Optional[AsyncPlaywright] = None
 
@@ -154,22 +154,22 @@ class ScrapyPlaywrightDownloadHandler(HTTPDownloadHandler):
             self.context_semaphore = asyncio.Semaphore(value=self.config.max_contexts)
 
         # headers
-        if "PLAYWRIGHT_PROCESS_REQUEST_HEADERS" in crawler.settings:
-            if crawler.settings["PLAYWRIGHT_PROCESS_REQUEST_HEADERS"] is None:
+        if "PATCHRIGHT_PROCESS_REQUEST_HEADERS" in crawler.settings:
+            if crawler.settings["PATCHRIGHT_PROCESS_REQUEST_HEADERS"] is None:
                 self.process_request_headers = None
             else:
                 self.process_request_headers = load_object(
-                    crawler.settings["PLAYWRIGHT_PROCESS_REQUEST_HEADERS"]
+                    crawler.settings["PATCHRIGHT_PROCESS_REQUEST_HEADERS"]
                 )
         else:
             self.process_request_headers = use_scrapy_headers
 
         self.abort_request: Optional[Callable[[PlaywrightRequest], Union[Awaitable, bool]]] = None
-        if crawler.settings.get("PLAYWRIGHT_ABORT_REQUEST"):
-            self.abort_request = load_object(crawler.settings["PLAYWRIGHT_ABORT_REQUEST"])
+        if crawler.settings.get("PATCHRIGHT_ABORT_REQUEST"):
+            self.abort_request = load_object(crawler.settings["PATCHRIGHT_ABORT_REQUEST"])
 
     @classmethod
-    def from_crawler(cls: Type[PlaywrightHandler], crawler: Crawler) -> PlaywrightHandler:
+    def from_crawler(cls: Type[PatchrightHandler], crawler: Crawler) -> PatchrightHandler:
         return cls(crawler)
 
     def _deferred_from_coro(self, coro: Awaitable) -> Deferred:
@@ -197,7 +197,7 @@ class ScrapyPlaywrightDownloadHandler(HTTPDownloadHandler):
             )
             self._set_max_concurrent_context_count()
             logger.info("Startup context(s) launched")
-            self.stats.set_value("playwright/page_count", self._get_total_page_count())
+            self.stats.set_value("patchright/page_count", self._get_total_page_count())
 
     async def _maybe_launch_browser(self) -> None:
         async with self.browser_launch_lock:
@@ -205,7 +205,7 @@ class ScrapyPlaywrightDownloadHandler(HTTPDownloadHandler):
                 logger.info("Launching browser %s", self.browser_type.name)
                 self.browser = await self.browser_type.launch(**self.config.launch_options)
                 logger.info("Browser %s launched", self.browser_type.name)
-                self.stats.inc_value("playwright/browser_count")
+                self.stats.inc_value("patchright/browser_count")
                 self.browser.on("disconnected", self._browser_disconnected_callback)
 
     async def _maybe_connect_remote_devtools(self) -> None:
@@ -216,7 +216,7 @@ class ScrapyPlaywrightDownloadHandler(HTTPDownloadHandler):
                     self.config.cdp_url, **self.config.cdp_kwargs
                 )
                 logger.info("Connected using CDP: %s", self.config.cdp_url)
-                self.stats.inc_value("playwright/browser_count")
+                self.stats.inc_value("patchright/browser_count")
                 self.browser.on("disconnected", self._browser_disconnected_callback)
 
     async def _maybe_connect_remote(self) -> None:
@@ -227,7 +227,7 @@ class ScrapyPlaywrightDownloadHandler(HTTPDownloadHandler):
                     self.config.connect_url, **self.config.connect_kwargs
                 )
                 logger.info("Connected to remote Playwright")
-                self.stats.inc_value("playwright/browser_count")
+                self.stats.inc_value("patchright/browser_count")
                 self.browser.on("disconnected", self._browser_disconnected_callback)
 
     async def _create_browser_context(
@@ -261,9 +261,9 @@ class ScrapyPlaywrightDownloadHandler(HTTPDownloadHandler):
         context.on(
             "close", self._make_close_browser_context_callback(name, persistent, remote, spider)
         )
-        self.stats.inc_value("playwright/context_count")
-        self.stats.inc_value(f"playwright/context_count/persistent/{persistent}")
-        self.stats.inc_value(f"playwright/context_count/remote/{remote}")
+        self.stats.inc_value("patchright/context_count")
+        self.stats.inc_value(f"patchright/context_count/persistent/{persistent}")
+        self.stats.inc_value(f"patchright/context_count/remote/{remote}")
         logger.debug(
             "Browser context started: '%s' (persistent=%s, remote=%s)",
             name,
@@ -288,7 +288,7 @@ class ScrapyPlaywrightDownloadHandler(HTTPDownloadHandler):
 
     async def _create_page(self, request: Request, spider: Spider) -> Page:
         """Create a new page in a context, also creating a new context if necessary."""
-        context_name = request.meta.setdefault("playwright_context", DEFAULT_CONTEXT_NAME)
+        context_name = request.meta.setdefault("patchright_context", DEFAULT_CONTEXT_NAME)
         # this block needs to be locked because several attempts to launch a context
         # with the same name could happen at the same time from different requests
         async with self.context_launch_lock:
@@ -296,13 +296,13 @@ class ScrapyPlaywrightDownloadHandler(HTTPDownloadHandler):
             if ctx_wrapper is None:
                 ctx_wrapper = await self._create_browser_context(
                     name=context_name,
-                    context_kwargs=request.meta.get("playwright_context_kwargs"),
+                    context_kwargs=request.meta.get("patchright_context_kwargs"),
                     spider=spider,
                 )
 
         await ctx_wrapper.semaphore.acquire()
         page = await ctx_wrapper.context.new_page()
-        self.stats.inc_value("playwright/page_count")
+        self.stats.inc_value("patchright/page_count")
         total_page_count = self._get_total_page_count()
         logger.debug(
             "[Context=%s] New page created, page count is %i (%i for all contexts)",
@@ -336,15 +336,15 @@ class ScrapyPlaywrightDownloadHandler(HTTPDownloadHandler):
 
     def _set_max_concurrent_page_count(self):
         count = self._get_total_page_count()
-        current_max_count = self.stats.get_value("playwright/page_count/max_concurrent")
+        current_max_count = self.stats.get_value("patchright/page_count/max_concurrent")
         if current_max_count is None or count > current_max_count:
-            self.stats.set_value("playwright/page_count/max_concurrent", count)
+            self.stats.set_value("patchright/page_count/max_concurrent", count)
 
     def _set_max_concurrent_context_count(self):
-        current_max_count = self.stats.get_value("playwright/context_count/max_concurrent")
+        current_max_count = self.stats.get_value("patchright/context_count/max_concurrent")
         if current_max_count is None or len(self.context_wrappers) > current_max_count:
             self.stats.set_value(
-                "playwright/context_count/max_concurrent", len(self.context_wrappers)
+                "patchright/context_count/max_concurrent", len(self.context_wrappers)
             )
 
     @inlineCallbacks
@@ -368,7 +368,7 @@ class ScrapyPlaywrightDownloadHandler(HTTPDownloadHandler):
             await self.playwright.stop()
 
     def download_request(self, request: Request, spider: Spider) -> Deferred:
-        if request.meta.get("playwright"):
+        if request.meta.get("patchright"):
             return self._deferred_from_coro(self._download_request(request, spider))
         return super().download_request(request, spider)
 
@@ -393,10 +393,10 @@ class ScrapyPlaywrightDownloadHandler(HTTPDownloadHandler):
                 )
 
     async def _download_request_with_retry(self, request: Request, spider: Spider) -> Response:
-        page = request.meta.get("playwright_page")
+        page = request.meta.get("patchright_page")
         if not isinstance(page, Page) or page.is_closed():
             page = await self._create_page(request=request, spider=spider)
-        context_name = request.meta.setdefault("playwright_context", DEFAULT_CONTEXT_NAME)
+        context_name = request.meta.setdefault("patchright_context", DEFAULT_CONTEXT_NAME)
 
         _attach_page_event_handlers(
             page=page, request=request, spider=spider, context_name=context_name
@@ -431,7 +431,7 @@ class ScrapyPlaywrightDownloadHandler(HTTPDownloadHandler):
         try:
             return await self._download_request_with_page(request, page, spider)
         except Exception as ex:
-            if not request.meta.get("playwright_include_page") and not page.is_closed():
+            if not request.meta.get("patchright_include_page") and not page.is_closed():
                 logger.warning(
                     "Closing page due to failed request: %s exc_type=%s exc_msg=%s",
                     request,
@@ -447,15 +447,15 @@ class ScrapyPlaywrightDownloadHandler(HTTPDownloadHandler):
                     exc_info=True,
                 )
                 await page.close()
-                self.stats.inc_value("playwright/page_count/closed")
+                self.stats.inc_value("patchright/page_count/closed")
             raise
 
     async def _download_request_with_page(
         self, request: Request, page: Page, spider: Spider
     ) -> Response:
         # set this early to make it available in errbacks even if something fails
-        if request.meta.get("playwright_include_page"):
-            request.meta["playwright_page"] = page
+        if request.meta.get("patchright_include_page"):
+            request.meta["patchright_page"] = page
 
         start_time = time()
         response, download = await self._get_response_and_download(request, page, spider)
@@ -470,7 +470,7 @@ class ScrapyPlaywrightDownloadHandler(HTTPDownloadHandler):
                 request,
                 extra={
                     "spider": spider,
-                    "context_name": request.meta.get("playwright_context"),
+                    "context_name": request.meta.get("patchright_context"),
                     "scrapy_request_url": request.url,
                     "scrapy_request_method": request.method,
                 },
@@ -481,7 +481,7 @@ class ScrapyPlaywrightDownloadHandler(HTTPDownloadHandler):
         body_str = await _get_page_content(
             page=page,
             spider=spider,
-            context_name=request.meta.get("playwright_context"),
+            context_name=request.meta.get("patchright_context"),
             scrapy_request_url=request.url,
             scrapy_request_method=request.method,
         )
@@ -489,7 +489,7 @@ class ScrapyPlaywrightDownloadHandler(HTTPDownloadHandler):
 
         server_ip_address = None
         if response is not None:
-            request.meta["playwright_security_details"] = await response.security_details()
+            request.meta["patchright_security_details"] = await response.security_details()
             with suppress(KeyError, TypeError, ValueError):
                 server_addr = await response.server_addr()
                 server_ip_address = ip_address(server_addr["ipAddress"])
@@ -497,12 +497,12 @@ class ScrapyPlaywrightDownloadHandler(HTTPDownloadHandler):
         if download and download.exception:
             raise download.exception
 
-        if not request.meta.get("playwright_include_page"):
+        if not request.meta.get("patchright_include_page"):
             await page.close()
-            self.stats.inc_value("playwright/page_count/closed")
+            self.stats.inc_value("patchright/page_count/closed")
 
         if download:
-            request.meta["playwright_suggested_filename"] = download.suggested_filename
+            request.meta["patchright_suggested_filename"] = download.suggested_filename
             respcls = responsetypes.from_args(url=download.url, body=download.body)
             download_headers = Headers(download.headers)
             download_headers.pop("Content-Encoding", None)
@@ -512,7 +512,7 @@ class ScrapyPlaywrightDownloadHandler(HTTPDownloadHandler):
                 headers=download_headers,
                 body=download.body,
                 request=request,
-                flags=["playwright"],
+                flags=["patchright"],
             )
 
         body, encoding = _encode_body(headers=headers, text=body_str)
@@ -523,7 +523,7 @@ class ScrapyPlaywrightDownloadHandler(HTTPDownloadHandler):
             headers=headers,
             body=body,
             request=request,
-            flags=["playwright"],
+            flags=["patchright"],
             encoding=encoding,
             ip_address=server_ip_address,
         )
@@ -538,7 +538,7 @@ class ScrapyPlaywrightDownloadHandler(HTTPDownloadHandler):
 
         async def _handle_download(dwnld: PlaywrightDownload) -> None:
             download_started.set()
-            self.stats.inc_value("playwright/download_count")
+            self.stats.inc_value("patchright/download_count")
             try:
                 if failure := await dwnld.failure():
                     raise RuntimeError(f"Failed to download {dwnld.url}: {failure}")
@@ -555,7 +555,7 @@ class ScrapyPlaywrightDownloadHandler(HTTPDownloadHandler):
             download.headers = await response.all_headers()
             download_started.set()
 
-        page_goto_kwargs = request.meta.get("playwright_page_goto_kwargs") or {}
+        page_goto_kwargs = request.meta.get("patchright_page_goto_kwargs") or {}
         page_goto_kwargs.pop("url", None)
         page.on("download", _handle_download)
         page.on("response", _handle_response)
@@ -575,7 +575,7 @@ class ScrapyPlaywrightDownloadHandler(HTTPDownloadHandler):
                 request.url,
                 extra={
                     "spider": spider,
-                    "context_name": request.meta.get("playwright_context"),
+                    "context_name": request.meta.get("patchright_context"),
                     "scrapy_request_url": request.url,
                     "scrapy_request_method": request.method,
                 },
@@ -590,7 +590,7 @@ class ScrapyPlaywrightDownloadHandler(HTTPDownloadHandler):
                 request.url,
                 extra={
                     "spider": spider,
-                    "context_name": request.meta.get("playwright_context"),
+                    "context_name": request.meta.get("patchright_context"),
                     "scrapy_request_url": request.url,
                     "scrapy_request_method": request.method,
                 },
@@ -603,8 +603,8 @@ class ScrapyPlaywrightDownloadHandler(HTTPDownloadHandler):
         return response, download if download else None
 
     async def _apply_page_methods(self, page: Page, request: Request, spider: Spider) -> None:
-        context_name = request.meta.get("playwright_context")
-        page_methods = request.meta.get("playwright_page_methods") or ()
+        context_name = request.meta.get("patchright_context")
+        page_methods = request.meta.get("patchright_page_methods") or ()
         if isinstance(page_methods, dict):
             page_methods = page_methods.values()
         for pm in page_methods:
@@ -644,7 +644,7 @@ class ScrapyPlaywrightDownloadHandler(HTTPDownloadHandler):
                 )
 
     def _increment_request_stats(self, request: PlaywrightRequest) -> None:
-        stats_prefix = "playwright/request_count"
+        stats_prefix = "patchright/request_count"
         self.stats.inc_value(stats_prefix)
         self.stats.inc_value(f"{stats_prefix}/resource_type/{request.resource_type}")
         self.stats.inc_value(f"{stats_prefix}/method/{request.method}")
@@ -652,7 +652,7 @@ class ScrapyPlaywrightDownloadHandler(HTTPDownloadHandler):
             self.stats.inc_value(f"{stats_prefix}/navigation")
 
     def _increment_response_stats(self, response: PlaywrightResponse) -> None:
-        stats_prefix = "playwright/response_count"
+        stats_prefix = "patchright/response_count"
         self.stats.inc_value(stats_prefix)
         self.stats.inc_value(f"{stats_prefix}/resource_type/{response.request.resource_type}")
         self.stats.inc_value(f"{stats_prefix}/method/{response.request.method}")
@@ -715,7 +715,7 @@ class ScrapyPlaywrightDownloadHandler(HTTPDownloadHandler):
                 if should_abort:
                     await route.abort()
                     logger.debug(
-                        "[Context=%s] Aborted Playwright request <%s %s>",
+                        "[Context=%s] Aborted Patchright request <%s %s>",
                         context_name,
                         playwright_request.method.upper(),
                         playwright_request.url,
@@ -724,11 +724,11 @@ class ScrapyPlaywrightDownloadHandler(HTTPDownloadHandler):
                             "context_name": context_name,
                             "scrapy_request_url": url,
                             "scrapy_request_method": method,
-                            "playwright_request_url": playwright_request.url,
-                            "playwright_request_method": playwright_request.method,
+                            "patchright_request_url": playwright_request.url,
+                            "patchright_request_method": playwright_request.method,
                         },
                     )
-                    self.stats.inc_value("playwright/request_count/aborted")
+                    self.stats.inc_value("patchright/request_count/aborted")
                     return None
 
             overrides: dict = {}
@@ -737,7 +737,7 @@ class ScrapyPlaywrightDownloadHandler(HTTPDownloadHandler):
                 final_headers = await playwright_request.all_headers()
             elif (sig := inspect.signature(self.process_request_headers)) and (
                 "browser_type_name" in sig.parameters
-                and "playwright_request" in sig.parameters
+                and "patchright_request" in sig.parameters
                 and "scrapy_request_data" in sig.parameters
             ):
                 overrides["headers"] = final_headers = await _maybe_await(
@@ -756,7 +756,7 @@ class ScrapyPlaywrightDownloadHandler(HTTPDownloadHandler):
             else:
                 warnings.warn(
                     "Accepting positional arguments in the function passed to the"
-                    " PLAYWRIGHT_PROCESS_REQUEST_HEADERS setting is deprecated. The function"
+                    " PATCHRIGHT_PROCESS_REQUEST_HEADERS setting is deprecated. The function"
                     " should accept three (3) keyword arguments instead:"
                     " browser_type_name: str,"
                     " playwright_request: playwright.async_api.Request,"
@@ -794,7 +794,7 @@ class ScrapyPlaywrightDownloadHandler(HTTPDownloadHandler):
                 await route.continue_(**overrides)
                 if overrides.get("method"):
                     logger.debug(
-                        "[Context=%s] Overridden method for Playwright request"
+                        "[Context=%s] Overridden method for Patchright request"
                         " to %s: original=%s new=%s",
                         context_name,
                         playwright_request.url,
@@ -805,15 +805,15 @@ class ScrapyPlaywrightDownloadHandler(HTTPDownloadHandler):
                             "context_name": context_name,
                             "scrapy_request_url": url,
                             "scrapy_request_method": method,
-                            "playwright_request_url": playwright_request.url,
-                            "playwright_request_method_original": original_playwright_method,
-                            "playwright_request_method_new": overrides["method"],
+                            "patchright_request_url": playwright_request.url,
+                            "patchright_request_method_original": original_playwright_method,
+                            "patchright_request_method_new": overrides["method"],
                         },
                     )
             except PlaywrightError as ex:
                 if _is_safe_close_error(ex):
                     logger.warning(
-                        "Failed processing Playwright request: <%s %s> exc_type=%s exc_msg=%s",
+                        "Failed processing Patchright request: <%s %s> exc_type=%s exc_msg=%s",
                         playwright_request.method,
                         playwright_request.url,
                         type(ex),
@@ -823,8 +823,8 @@ class ScrapyPlaywrightDownloadHandler(HTTPDownloadHandler):
                             "context_name": context_name,
                             "scrapy_request_url": url,
                             "scrapy_request_method": method,
-                            "playwright_request_url": playwright_request.url,
-                            "playwright_request_method": playwright_request.method,
+                            "patchright_request_url": playwright_request.url,
+                            "patchright_request_method": playwright_request.method,
                             "exception": ex,
                         },
                         exc_info=True,
@@ -838,7 +838,7 @@ class ScrapyPlaywrightDownloadHandler(HTTPDownloadHandler):
 def _attach_page_event_handlers(
     page: Page, request: Request, spider: Spider, context_name: str
 ) -> None:
-    event_handlers = request.meta.get("playwright_page_event_handlers") or {}
+    event_handlers = request.meta.get("patchright_page_event_handlers") or {}
     for event, handler in event_handlers.items():
         if callable(handler):
             page.on(event, handler)
@@ -888,7 +888,7 @@ async def _maybe_execute_page_init_callback(
     context_name: str,
     spider: Spider,
 ) -> None:
-    page_init_callback = request.meta.get("playwright_page_init_callback")
+    page_init_callback = request.meta.get("patchright_page_init_callback")
     if page_init_callback:
         try:
             page_init_callback = load_object(page_init_callback)
@@ -926,9 +926,9 @@ def _make_request_logger(context_name: str, spider: Spider) -> Callable:
             extra={
                 "spider": spider,
                 "context_name": context_name,
-                "playwright_request_url": request.url,
-                "playwright_request_method": request.method,
-                "playwright_resource_type": request.resource_type,
+                "patchright_request_url": request.url,
+                "patchright_request_method": request.method,
+                "patchright_resource_type": request.resource_type,
             },
         )
 
@@ -950,8 +950,8 @@ def _make_response_logger(context_name: str, spider: Spider) -> Callable:
             extra={
                 "spider": spider,
                 "context_name": context_name,
-                "playwright_response_url": response.url,
-                "playwright_response_status": response.status,
+                "patchright_response_url": response.url,
+                "patchright_response_status": response.status,
             },
         )
 

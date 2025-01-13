@@ -1,6 +1,6 @@
 """
 This module includes functions to process request headers.
-Refer to the PLAYWRIGHT_PROCESS_REQUEST_HEADERS setting for more information.
+Refer to the PATCHRIGHT_PROCESS_REQUEST_HEADERS setting for more information.
 """
 
 from typing import Dict
