@@ -5,7 +5,7 @@ from typing import List
 from scrapy.exceptions import NotConfigured
 from scrapy.extensions.memusage import MemoryUsage
 
-from scrapy_playwright.handler import ScrapyPlaywrightDownloadHandler, logger
+from scrapy_patchright.handler import ScrapyPlaywrightDownloadHandler, logger
 
 
 _MIB_FACTOR = 1024**2

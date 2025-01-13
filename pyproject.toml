@@ -1,2 +1,18 @@
-[tool.black]
-line-length = 99
+[project]
+name = "scrapy-patchright"
+version = "0.0.42"
+description = "Patchright Integration For Scrapy"
+authors = [
+    {name = "Ehsan U.",email = "lancerf562@gmail.com"}
+]
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "scrapy>=2.0,!=2.4.0",
+    "patchright>=1.49",
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"

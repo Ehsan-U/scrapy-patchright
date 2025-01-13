@@ -1,8 +1,8 @@
-# scrapy-playwright: Playwright integration for Scrapy
-[![version](https://img.shields.io/pypi/v/scrapy-playwright.svg)](https://pypi.python.org/pypi/scrapy-playwright)
-[![pyversions](https://img.shields.io/pypi/pyversions/scrapy-playwright.svg)](https://pypi.python.org/pypi/scrapy-playwright)
-[![Tests](https://github.com/scrapy-plugins/scrapy-playwright/actions/workflows/tests.yml/badge.svg)](https://github.com/scrapy-plugins/scrapy-playwright/actions/workflows/tests.yml)
-[![codecov](https://codecov.io/gh/scrapy-plugins/scrapy-playwright/branch/master/graph/badge.svg)](https://codecov.io/gh/scrapy-plugins/scrapy-playwright)
+# scrapy-patchright: Playwright integration for Scrapy
+[![version](https://img.shields.io/pypi/v/scrapy-patchright.svg)](https://pypi.python.org/pypi/scrapy-patchright)
+[![pyversions](https://img.shields.io/pypi/pyversions/scrapy-patchright.svg)](https://pypi.python.org/pypi/scrapy-patchright)
+[![Tests](https://github.com/scrapy-plugins/scrapy-patchright/actions/workflows/tests.yml/badge.svg)](https://github.com/scrapy-plugins/scrapy-patchright/actions/workflows/tests.yml)
+[![codecov](https://codecov.io/gh/scrapy-plugins/scrapy-patchright/branch/master/graph/badge.svg)](https://codecov.io/gh/scrapy-plugins/scrapy-patchright)
 
 
 A [Scrapy](https://github.com/scrapy/scrapy) Download Handler which performs requests using
@@ -29,10 +29,10 @@ to integrate `asyncio`-based projects such as `Playwright`.
 
 ## Installation
 
-`scrapy-playwright` is available on PyPI and can be installed with `pip`:
+`scrapy-patchright` is available on PyPI and can be installed with `pip`:
 
 ```
-pip install scrapy-playwright
+pip install scrapy-patchright
 ```
 
 `playwright` is defined as a dependency so it gets installed automatically,
@@ -512,7 +512,7 @@ class AwesomeSpider(scrapy.Spider):
 
 **Important!**
 
-`scrapy-playwright` uses `Page.route` & `Page.unroute` internally, avoid using
+`scrapy-patchright` uses `Page.route` & `Page.unroute` internally, avoid using
 these methods unless you know exactly what you're doing.
 
 ### `playwright_page_methods`
@@ -760,8 +760,8 @@ async def close_context_on_error(self, failure):
 
 ### Avoid race conditions & memory leaks when closing contexts
 Make sure to close the page before closing the context. See
-[this comment](https://github.com/scrapy-plugins/scrapy-playwright/issues/191#issuecomment-1548097114)
-in [#191](https://github.com/scrapy-plugins/scrapy-playwright/issues/191)
+[this comment](https://github.com/scrapy-plugins/scrapy-patchright/issues/191#issuecomment-1548097114)
+in [#191](https://github.com/scrapy-plugins/scrapy-patchright/issues/191)
 for more information.
 
 ### Maximum concurrent context count
@@ -983,13 +983,13 @@ for a list of the accepted events and the arguments passed to their handlers.
 The default Scrapy memory usage extension
 (`scrapy.extensions.memusage.MemoryUsage`) does not include the memory used by
 Playwright because the browser is launched as a separate process. The
-scrapy-playwright package provides a replacement extension which also considers
+scrapy-patchright package provides a replacement extension which also considers
 the memory used by Playwright. This extension needs the
 [`psutil`](https://pypi.org/project/psutil/) package to work.
 
 Update the [EXTENSIONS](https://docs.scrapy.org/en/latest/topics/settings.html#std-setting-EXTENSIONS)
 setting to disable the built-in Scrapy extension and replace it with the one
-from the scrapy-playwright package:
+from the scrapy-patchright package:
 
 ```python
 # settings.py
@@ -1076,7 +1076,7 @@ Refer to the [Proxy support](#proxy-support) section for more information.
 
 ### Unsopported signals
 The `headers_received` and `bytes_received` signals are not fired by the
-scrapy-playwright download handler.
+scrapy-patchright download handler.
 
 
 ## Reporting issues
@@ -1125,7 +1125,7 @@ asyncio.run(main())
 
 ### Software versions
 
-Be sure to include which versions of Scrapy, Playwright and scrapy-playwright you are using:
+Be sure to include which versions of Scrapy, Playwright and scrapy-patchright you are using:
 
 ```
 $ playwright --version
