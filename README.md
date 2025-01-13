@@ -64,8 +64,8 @@ Replace the default `http` and/or `https` Download Handlers through
 ```python
 # settings.py
 DOWNLOAD_HANDLERS = {
-    "http": "scrapy_playwright.handler.ScrapyPlaywrightDownloadHandler",
-    "https": "scrapy_playwright.handler.ScrapyPlaywrightDownloadHandler",
+    "http": "scrapy_patchright.handler.ScrapyPlaywrightDownloadHandler",
+    "https": "scrapy_patchright.handler.ScrapyPlaywrightDownloadHandler",
 }
 ```
 
